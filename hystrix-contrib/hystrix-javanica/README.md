@@ -1,3 +1,51 @@
+# hystrix-javanica补丁
+通过AOP动态织入方法统一处理fallback，减少代码量、方便集成、降低使用门槛。
+## 背景
+由于项目需要在程序中限制一些请求的并发访问量，于是在一个传统项目中引入了Hystrix。而这个项目对fallback的处理基本上都是可以一样的。为减少代码量，方便集成、统一程序输出、降低使用门槛，对hystrix-javanica代码进行了部分修改，以支持AOP动态织入的对象。
+## 原理
+使用AOP方式为对象动态添加默认的fallback方法
+
+## 使用步骤
+### 创建fallback处理接口
+```
+public interface HystrixFallback {
+    void defaultAjaxFallback(Throwable e);
+    String defaultViewFallback(Throwable e);
+}
+
+```
+### 实现fallback接口
+```
+public class HystrixFallbackImpl implements HystrixFallback {
+    @Override
+    public void defaultAjaxFallback(Throwable e) {
+        //TODO 自定义通用的处理逻辑
+    }
+    @Override
+    public String defaultViewFallback(Throwable e) {
+         //TODO 自定义通用的处理逻辑
+    }
+}
+```
+ ### 为需要使用hystrix的对象织入方法
+```
+@Aspect
+@Component
+public class HystrixFallbackAspect {
+    @DeclareParents(value = "*.web.*Controller", defaultImpl = HystrixFallbackImpl.class)
+    private HystrixFallback hystrixFallback;
+}
+```
+### 通过注解方式使用Hystrix
+```
+    @HystrixCommand(defaultFallback = "defaultAjaxFallback", groupKey = "group1", commandKey = "command1")
+```
+## 注意事项
+1. 需要使用统一fallback的类中不能存在与fallback接口方法签名相同的方法
+2. fallback接口和实现类可以根据项目情况自己定义
+3. fallback接口方法签名要符合Hystrix对默认fallback方法的要求
+***
+
 # hystrix-javanica
 
 Java language has a great advantages over other languages such as reflection and annotations.
